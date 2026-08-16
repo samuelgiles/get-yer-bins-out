@@ -23,8 +23,6 @@ struct NextCollectionView: View {
                     missingScheduleContent
                 }
             }
-            .navigationTitle("Next")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .task {
             if appModel.snapshot == nil {
