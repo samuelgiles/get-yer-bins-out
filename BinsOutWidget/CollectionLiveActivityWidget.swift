@@ -11,25 +11,36 @@ struct CollectionLiveActivityWidget: Widget {
                 .activitySystemActionForegroundColor(.green)
                 .widgetURL(ActivityLinks.collection(context.attributes.occurrenceID))
         } dynamicIsland: { context in
-            DynamicIsland {
+            let display = activityDisplay(context: context)
+
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: "arrow.3.trianglepath")
-                        .foregroundStyle(.green)
+                    Image(systemName: display.symbolName)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(context.state.isPutOut ? .green : .primary)
                         .accessibilityHidden(true)
                 }
-                DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.attributes.collectionDateShort)
-                        .font(.caption)
+                DynamicIslandExpandedRegion(.trailing, priority: 1) {
+                    Text(CollectionActivityDisplay.dynamicIslandDate(for: context.attributes.collectionDateShort))
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .allowsTightening(true)
+                        .accessibilityLabel("Scheduled collection \(context.attributes.collectionDate)")
                 }
-                DynamicIslandExpandedRegion(.center) {
-                    Text(activityTitle(context: context))
-                        .font(.headline)
+                DynamicIslandExpandedRegion(.center, priority: 1) {
+                    Text(display.title)
+                        .font(.headline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .allowsTightening(true)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack {
+                    HStack(alignment: .top, spacing: 8) {
                         ActivityContainerSummary(containers: context.attributes.containers)
-                        Spacer()
+                        Spacer(minLength: 8)
                         BinsOutIntentButton(
                             occurrenceID: context.attributes.occurrenceID,
                             isPutOut: context.state.isPutOut
@@ -37,14 +48,21 @@ struct CollectionLiveActivityWidget: Widget {
                     }
                 }
             } compactLeading: {
-                Image(systemName: context.state.isPutOut ? "checkmark" : "arrow.3.trianglepath")
+                Image(systemName: context.state.isPutOut ? "checkmark" : display.symbolName)
                     .foregroundStyle(context.state.isPutOut ? .green : .primary)
+                    .accessibilityLabel(context.state.isPutOut ? "Bins are out" : display.title)
             } compactTrailing: {
                 Text(context.state.isPutOut ? "Done" : "Tonight")
-                    .font(.caption2)
+                    .font(.caption2.weight(.medium))
+                    .accessibilityLabel(
+                        context.state.isPutOut
+                            ? "Bins are out"
+                            : "Scheduled collection \(context.attributes.collectionDate)"
+                    )
             } minimal: {
-                Image(systemName: context.state.isPutOut ? "checkmark" : "trash")
+                Image(systemName: context.state.isPutOut ? "checkmark" : display.symbolName)
                     .foregroundStyle(context.state.isPutOut ? .green : .primary)
+                    .accessibilityLabel(context.state.isPutOut ? "Bins are out" : display.title)
             }
             .keylineTint(.green)
             .widgetURL(ActivityLinks.collection(context.attributes.occurrenceID))
@@ -55,17 +73,17 @@ struct CollectionLiveActivityWidget: Widget {
 private struct CollectionActivityLockScreenView: View {
     let context: ActivityViewContext<CollectionActivityAttributes>
 
+    private var display: CollectionActivityDisplay {
+        activityDisplay(context: context)
+    }
+
     var body: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 6) {
-                Label(
-                    activityTitle(context: context),
-                    systemImage: context.state.isPutOut
-                        ? "checkmark.circle.fill"
-                        : isPreview(context: context) ? "play.rectangle.fill" : "moon.stars.fill"
-                )
-                .font(.headline)
-                .foregroundStyle(context.state.isPutOut ? .green : .primary)
+                Label(display.title, systemImage: context.state.isPutOut ? "checkmark.circle.fill" : display.symbolName)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(context.state.isPutOut ? .green : .primary)
+                    .accessibilityLabel(context.state.isPutOut ? "Bins are out" : display.title)
 
                 Text(context.attributes.collectionDate)
                     .font(.subheadline)
@@ -130,12 +148,8 @@ private struct BinsOutIntentButton: View {
     }
 }
 
-private func isPreview(context: ActivityViewContext<CollectionActivityAttributes>) -> Bool {
-    SystemIdentifiers.isLiveActivityPreview(scheduleID: context.attributes.scheduleID)
-}
-
-private func activityTitle(context: ActivityViewContext<CollectionActivityAttributes>) -> String {
-    CollectionActivityTitle.title(for: context.attributes.containers)
+private func activityDisplay(context: ActivityViewContext<CollectionActivityAttributes>) -> CollectionActivityDisplay {
+    CollectionActivityDisplay.make(for: context.attributes.containers)
 }
 
 private enum ActivityLinks {
