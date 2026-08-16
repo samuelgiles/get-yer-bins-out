@@ -75,6 +75,30 @@ final class WidgetSchedulePayloadTests: XCTestCase {
         XCTAssertTrue(occurrence.localDate.fullDescription.contains("29 March 2026"))
     }
 
+    func testCompactDateUsesWeekdayAndEnglishOrdinal() {
+        XCTAssertEqual(
+            WidgetLocalDate(year: 2026, month: 8, day: 18).shortOrdinalDescription,
+            "Tue 18th"
+        )
+        XCTAssertEqual(WidgetLocalDate(year: 2026, month: 8, day: 21).shortOrdinalDescription, "Fri 21st")
+        XCTAssertEqual(WidgetLocalDate(year: 2026, month: 8, day: 22).shortOrdinalDescription, "Sat 22nd")
+        XCTAssertEqual(WidgetLocalDate(year: 2026, month: 8, day: 23).shortOrdinalDescription, "Sun 23rd")
+    }
+
+    func testWidgetBackgroundStylePrefersBinsForCombinedCollection() {
+        let recycling = WidgetCollectionSummary.make(for: [
+            WidgetContainer(id: "green", name: "Green recycling box", symbolName: "arrow.3.trianglepath"),
+            WidgetContainer(id: "food", name: "Food waste bin", symbolName: "fork.knife"),
+        ])
+        let combined = WidgetCollectionSummary.make(for: [
+            WidgetContainer(id: "general", name: "Black wheelie bin", symbolName: "trash.fill"),
+            WidgetContainer(id: "green", name: "Green recycling box", symbolName: "arrow.3.trianglepath"),
+        ])
+
+        XCTAssertEqual(recycling.backgroundStyle, .recycling)
+        XCTAssertEqual(combined.backgroundStyle, .bins)
+    }
+
     func testPresentationReportsStaleAndEmptyStates() {
         let now = Date(timeIntervalSince1970: 1_786_780_800)
         let stalePayload = WidgetSchedulePayload(

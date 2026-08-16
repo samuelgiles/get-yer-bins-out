@@ -179,6 +179,12 @@ struct WidgetLocalDate: Codable, Hashable, Comparable, Sendable {
         )
     }
 
+    var shortOrdinalDescription: String {
+        let weekdayIndex = Self.calendar.component(.weekday, from: dateAtNoon) - 1
+        let weekday = Self.calendar.shortWeekdaySymbols[weekdayIndex]
+        return "\(weekday) \(day)\(Self.ordinalSuffix(for: day))"
+    }
+
     func adding(days: Int) -> WidgetLocalDate {
         guard let date = Self.calendar.date(byAdding: .day, value: days, to: dateAtNoon) else {
             preconditionFailure("Gregorian date arithmetic failed")
@@ -188,6 +194,19 @@ struct WidgetLocalDate: Codable, Hashable, Comparable, Sendable {
 
     static func < (lhs: WidgetLocalDate, rhs: WidgetLocalDate) -> Bool {
         (lhs.year, lhs.month, lhs.day) < (rhs.year, rhs.month, rhs.day)
+    }
+
+    private static func ordinalSuffix(for day: Int) -> String {
+        if (11...13).contains(day % 100) {
+            return "th"
+        }
+
+        switch day % 10 {
+        case 1: return "st"
+        case 2: return "nd"
+        case 3: return "rd"
+        default: return "th"
+        }
     }
 
     private func date(hour: Int) -> Date {
@@ -232,6 +251,7 @@ enum WidgetSchedulePresentation: Equatable, Sendable {
 struct WidgetCollectionSummary: Equatable, Sendable {
     let title: String
     let symbolName: String
+    let backgroundStyle: WidgetCollectionBackgroundStyle
 
     static func make(for containers: [WidgetContainer]) -> WidgetCollectionSummary {
         let labels = containers.map { $0.name.lowercased() }
@@ -252,26 +272,59 @@ struct WidgetCollectionSummary: Equatable, Sendable {
         let hasFoodWaste = labels.contains { $0.contains("food waste") || $0.contains("food bin") }
 
         if hasGeneralWaste && hasRecycling {
-            return WidgetCollectionSummary(title: "Bins + Recycling", symbolName: "trash.fill")
+            return WidgetCollectionSummary(
+                title: "Bins + Recycling",
+                symbolName: "trash.fill",
+                backgroundStyle: .bins
+            )
         }
         if hasGeneralWaste && hasFoodWaste {
-            return WidgetCollectionSummary(title: "Bins + Food", symbolName: "trash.fill")
+            return WidgetCollectionSummary(
+                title: "Bins + Food",
+                symbolName: "trash.fill",
+                backgroundStyle: .bins
+            )
         }
         if hasRecycling {
-            return WidgetCollectionSummary(title: "Recycling", symbolName: "arrow.3.trianglepath")
+            return WidgetCollectionSummary(
+                title: "Recycling",
+                symbolName: "arrow.3.trianglepath",
+                backgroundStyle: .recycling
+            )
         }
         if hasGeneralWaste {
-            return WidgetCollectionSummary(title: "Bins", symbolName: "trash.fill")
+            return WidgetCollectionSummary(
+                title: "Bins",
+                symbolName: "trash.fill",
+                backgroundStyle: .bins
+            )
         }
         if hasGardenWaste {
-            return WidgetCollectionSummary(title: "Garden waste", symbolName: "leaf.fill")
+            return WidgetCollectionSummary(
+                title: "Garden waste",
+                symbolName: "leaf.fill",
+                backgroundStyle: .garden
+            )
         }
         if hasFoodWaste {
-            return WidgetCollectionSummary(title: "Food waste", symbolName: "fork.knife")
+            return WidgetCollectionSummary(
+                title: "Food waste",
+                symbolName: "fork.knife",
+                backgroundStyle: .food
+            )
         }
         return WidgetCollectionSummary(
             title: containers.count == 1 ? containers[0].name : "Collection",
-            symbolName: containers.first?.symbolName ?? "calendar"
+            symbolName: containers.first?.symbolName ?? "calendar",
+            backgroundStyle: .neutral
         )
     }
+}
+
+enum WidgetCollectionBackgroundStyle: Equatable, Sendable {
+    case recycling
+    case bins
+    case garden
+    case food
+    case neutral
 }

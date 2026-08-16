@@ -122,10 +122,20 @@ private struct NextCollectionWidgetView: View {
             }
         }
         .containerBackground(for: .widget) {
-            Color.clear
+            widgetBackground
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(entry.presentation.accessibilitySummary)
+    }
+
+    @ViewBuilder
+    private var widgetBackground: some View {
+        switch entry.presentation {
+        case let .scheduled(_, occurrence, _, _):
+            occurrence.summary.backgroundStyle.color
+        case .notConfigured, .empty:
+            Color.clear
+        }
     }
 
     private func freshnessText(fetchedAt: Date?, isStale: Bool) -> String {
@@ -145,7 +155,7 @@ private struct SmallCollectionWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            WidgetPropertyHeading(propertyDisplayName: propertyDisplayName)
+            WidgetPropertyHeading(propertyDisplayName: propertyDisplayName, onColoredBackground: true)
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Image(systemName: occurrence.summary.symbolName)
@@ -157,27 +167,18 @@ private struct SmallCollectionWidgetView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.78)
             }
+            .foregroundStyle(.white)
 
-            Text(occurrence.localDate.conciseDescription)
+            Text(occurrence.localDate.shortOrdinalDescription)
                 .font(.title3.weight(.bold))
+                .foregroundStyle(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
 
-            Text(containerText(limit: 1))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-
             Spacer(minLength: 0)
 
-            WidgetFreshnessLabel(text: freshness, isStale: isStale)
+            WidgetFreshnessLabel(text: freshness, isStale: isStale, onColoredBackground: true)
         }
-    }
-
-    private func containerText(limit: Int) -> String {
-        let visible = occurrence.containers.prefix(limit).map(\.name)
-        let more = occurrence.containers.count - visible.count
-        return more > 0 ? "\(visible.joined(separator: ", ")) +\(more)" : visible.joined(separator: ", ")
     }
 }
 
@@ -190,15 +191,12 @@ private struct MediumCollectionWidgetView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 7) {
-                WidgetPropertyHeading(propertyDisplayName: propertyDisplayName)
+                WidgetPropertyHeading(propertyDisplayName: propertyDisplayName, onColoredBackground: true)
 
-                Label("Next scheduled collection", systemImage: "calendar")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                Text(occurrence.localDate.fullDescription)
-                    .font(.headline.weight(.semibold))
-                    .lineLimit(2)
+                Text(occurrence.localDate.shortOrdinalDescription)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
                     .minimumScaleFactor(0.82)
 
                 HStack(spacing: 6) {
@@ -210,27 +208,24 @@ private struct MediumCollectionWidgetView: View {
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                 }
+                .foregroundStyle(.white)
 
                 Spacer(minLength: 0)
-                WidgetFreshnessLabel(text: freshness, isStale: isStale)
+                WidgetFreshnessLabel(text: freshness, isStale: isStale, onColoredBackground: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Put out")
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.78))
 
-                ForEach(occurrence.containers.prefix(3)) { container in
+                ForEach(occurrence.containers) { container in
                     Label(container.name, systemImage: container.symbolName)
                         .font(.caption)
+                        .foregroundStyle(.white)
                         .lineLimit(1)
-                }
-
-                if occurrence.containers.count > 3 {
-                    Text("+ \(occurrence.containers.count - 3) more")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .minimumScaleFactor(0.72)
                 }
                 Spacer(minLength: 0)
             }
@@ -241,11 +236,12 @@ private struct MediumCollectionWidgetView: View {
 
 private struct WidgetPropertyHeading: View {
     let propertyDisplayName: String
+    var onColoredBackground = false
 
     var body: some View {
         Label(propertyDisplayName, systemImage: "house.fill")
             .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(onColoredBackground ? .white.opacity(0.78) : .secondary)
             .lineLimit(1)
     }
 }
@@ -253,13 +249,35 @@ private struct WidgetPropertyHeading: View {
 private struct WidgetFreshnessLabel: View {
     let text: String
     let isStale: Bool
+    var onColoredBackground = false
 
     var body: some View {
         Label(text, systemImage: isStale ? "arrow.triangle.2.circlepath" : "clock")
             .font(.caption2)
-            .foregroundStyle(isStale ? .secondary : .tertiary)
+            .foregroundStyle(
+                onColoredBackground
+                    ? .white.opacity(isStale ? 0.82 : 0.68)
+                    : isStale ? .secondary : .secondary.opacity(0.7)
+            )
             .lineLimit(1)
             .minimumScaleFactor(0.82)
+    }
+}
+
+private extension WidgetCollectionBackgroundStyle {
+    var color: Color {
+        switch self {
+        case .recycling:
+            Color(red: 0.03, green: 0.40, blue: 0.22)
+        case .bins:
+            Color.black
+        case .garden:
+            Color(red: 0.08, green: 0.36, blue: 0.20)
+        case .food:
+            Color.brown
+        case .neutral:
+            Color.teal
+        }
     }
 }
 

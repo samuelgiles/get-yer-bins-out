@@ -8,19 +8,10 @@ struct PropertyScheduleHeader: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 12) {
-                    propertyLabel
-                    refreshButton
-                }
-            } else {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    propertyLabel
-                    Spacer(minLength: 12)
-                    refreshButton
-                }
-            }
+        HStack(alignment: .center, spacing: 12) {
+            propertyLabel
+            Spacer(minLength: 12)
+            refreshButton
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
@@ -42,9 +33,13 @@ struct PropertyScheduleHeader: View {
     }
 
     private var refreshButton: some View {
-        Button("Refresh", systemImage: "arrow.clockwise", action: refresh)
+        Button(action: refresh) {
+            Image(systemName: "arrow.clockwise")
+        }
             .buttonStyle(.bordered)
+            .buttonBorderShape(.circle)
             .disabled(isRefreshing)
+            .accessibilityLabel("Refresh")
             .accessibilityHint("Checks Bristol's collection schedule again")
     }
 }
