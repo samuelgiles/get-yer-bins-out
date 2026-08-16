@@ -2,6 +2,18 @@
 
 Bins Out is a native iOS 27 SwiftUI app for property-specific Bristol bin and recycling collection days. It talks directly to Bristol City Council, keeps the last good schedule on-device, and has no developer-operated backend, analytics SDK, postcode lookup, or location access.
 
+## Screenshots
+
+Every image below was captured from a disposable iOS 27 simulator running fixture
+data only. No live council request was made, and no real UPRN, address, calendar,
+or device-owner information appears in any of them.
+
+| Onboarding | Next collection |
+| --- | --- |
+| <img src="Documentation/Images/onboarding-council-selection.png" width="320" alt="Bins Out onboarding screen headed Welcome and Never miss bin night, with Bristol City Council shown as the only available council and marked as selected, above a Continue button."> | <img src="Documentation/Images/next-collection.png" width="320" alt="The Next screen for a property labelled 99 The Mall, Clifton. A card reads Next scheduled collection, Tuesday 18 August 2026, put out 17 Aug 2026 evening, listing black recycling box, brown food bin and green recycling box, with a Bins out button. Below, a Coming up section lists the following fortnight."> |
+| **Live Activity** | **Small widget** |
+| <img src="Documentation/Images/live-activity-lock-screen.png" width="320" alt="An iPhone Lock Screen showing the Bins Out Live Activity: a translucent green card headed Recycling, dated Tuesday 18 August 2026, listing black recycling box, brown food bin and green recycling box, with a Close button."> | <img src="Documentation/Images/small-collection-widget.png" width="320" alt="An iPhone Home Screen with the small Bins Out widget in the top-left corner. The green widget shows the property label 99 The Mall, Clifton, the heading Recycling, the date Tue 18th, and the countdown In 2 days."> |
+
 ## What works
 
 - Onboarding selects a council, validates an exact UPRN string, lets the user choose a private property label, previews the returned schedule, and saves it locally. Bristol City Council is currently the only provider.
@@ -28,6 +40,30 @@ The live request sends only the exact user-entered UPRN string to Bristol’s ap
 - Calendar sync requests full EventKit access only after opt-in and uses Apple’s writable single-calendar chooser. Once a calendar is selected, reconciliation runs automatically after selection, app load/activation, schedule refreshes, and EventKit store changes. It creates individual all-day events only through Bristol’s authoritative horizon, updates changed dates or container details, removes obsolete future managed events, and suppresses user-deleted events rather than silently recreating them.
 
 The app and WidgetKit extension use the `group.com.samuelgiles.BinsOut` App Group. Configure that capability for both bundle identifiers in the signing team before device testing.
+
+Both the app and the widget extension ship a `PrivacyInfo.xcprivacy`. Neither declares a required-reason API, because neither uses one: there is no `UserDefaults` or `@AppStorage` anywhere in the project, and persistence uses `FileManager.fileExists(atPath:)`, `Data(contentsOf:)`, and `Data.write(to:options:)`, none of which are covered APIs. [PRIVACY.md](PRIVACY.md) is the public, plain-English version.
+
+## Known limitations and future work
+
+These are intended behaviours that the current code does **not** implement. They are listed separately from “What works” on purpose — nothing in this section is shipped.
+
+### Automatic freshness
+
+- **Today:** the app reconciles widgets, notifications, Live Activities, and calendar events from whatever snapshot is already saved. A refresh happens when the user pulls to refresh or completes onboarding.
+- **Not implemented:** the app does not automatically fetch a newer Bristol schedule whenever it becomes active. A saved schedule can therefore be silently out of date, and the UI's freshness indicator is the only signal.
+- **Intended work:** a rate-limited foreground freshness policy so activation triggers at most one request per interval; a tighter near-horizon refresh as a collection approaches; retention of the last good cache so a failed refresh never blanks the screen; and opportunistic `BGAppRefresh` scheduling. Background refresh must be treated as a best-effort bonus, never as an alarm — iOS gives no delivery guarantee, so local notifications remain the reliable mechanism.
+- **Consequence to keep in mind:** because reconciliation only ever works from the saved snapshot, a change Bristol makes to a collection date can only be discovered after a new provider snapshot has actually been obtained. Calendar events, reminders, and Live Activities cannot correct themselves before that happens.
+
+### Live Activity alert window
+
+- **Desired product window:** 18:00 the evening before a collection through 09:00 on collection day — 15 hours.
+- **Platform constraint:** iOS limits a single Live Activity to eight active hours, so the window cannot be covered by one activity.
+- **Today:** the window is covered by two pre-scheduled linked segments, each within the eight-hour limit. Every scheduled segment requires a system alert when it begins, so with the present split the second segment risks producing a second alert overnight — exactly when a user does not want one.
+- **This is not solved.** The product compromise still has to be chosen (fewer segments and a shorter window, a differently placed split, or accepting the second alert), and whatever is chosen must be validated on physical hardware. Simulator runs do not reproduce the real scheduling and alerting behaviour.
+
+### Data deletion
+
+- There is no in-app “erase all data” flow. Deleting the app clears its App Group container, but the synchronizable iCloud Keychain property record can persist across reinstalls and on other devices, and calendar events are retained whenever the user chooses to keep them on disabling sync. See the retention section of [PRIVACY.md](PRIVACY.md), which documents this honestly rather than promising deletion the code does not perform.
 
 ## Build and test
 
