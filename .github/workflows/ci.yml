@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Unit tests (Xcode 27, iOS 27 simulator)
+    # `xcode-27` is GitHub's arm64-only image that ships Xcode 27 as the default
+    # toolchain with the iOS 27 simulator runtime. Once Xcode 27 becomes the
+    # default on the general image, this can move back to `macos-26`.
+    runs-on: xcode-27
+    timeout-minutes: 45
+
+    env:
+      NSUnbufferedIO: "YES"
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Verify the Xcode 27 toolchain
+        run: |
+          xcodebuild -version
+          xcode_major="$(xcodebuild -version | awk 'NR == 1 { split($2, v, "."); print v[1] }')"
+          if [ "$xcode_major" != "27" ]; then
+            echo "::error::Expected Xcode 27, found Xcode $xcode_major"
+            exit 1
+          fi
+          xcrun simctl list runtimes iOS
+
+      # Live Bristol integration tests stay opt-in: BINS_OUT_RUN_LIVE_TESTS is
+      # deliberately unset here, so they self-skip and CI stays deterministic
+      # and network-independent. Code signing is left at the project defaults so
+      # the simulator build keeps its ad-hoc entitlements; disabling it breaks
+      # the keychain round-trip test with errSecMissingEntitlement (-34018).
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project BinsOut.xcodeproj \
+            -scheme BinsOut \
+            -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+            -derivedDataPath DerivedData \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Upload the test result bundle
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults.xcresult
+          retention-days: 7
