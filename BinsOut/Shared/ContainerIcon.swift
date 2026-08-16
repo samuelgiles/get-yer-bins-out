@@ -4,6 +4,9 @@ struct ContainerIcon: View {
     let container: ContainerKind
     var size: Size = .regular
 
+    @ScaledMetric(relativeTo: .body) private var compactBadgeDiameter: CGFloat = 32
+    @ScaledMetric(relativeTo: .body) private var regularBadgeDiameter: CGFloat = 44
+
     enum Size {
         case compact
         case regular
@@ -16,14 +19,14 @@ struct ContainerIcon: View {
                 .title3
             }
         }
+    }
 
-        var padding: CGFloat {
-            switch self {
-            case .compact:
-                8
-            case .regular:
-                12
-            }
+    private var badgeDiameter: CGFloat {
+        switch size {
+        case .compact:
+            compactBadgeDiameter
+        case .regular:
+            regularBadgeDiameter
         }
     }
 
@@ -31,7 +34,7 @@ struct ContainerIcon: View {
         Image(systemName: container.displayMetadata.symbolName)
             .font(size.imageStyle)
             .foregroundStyle(container.displayMetadata.colorRole.tint)
-            .padding(size.padding)
+            .frame(width: badgeDiameter, height: badgeDiameter)
             .background(container.displayMetadata.colorRole.tint.opacity(0.12), in: .circle)
             .accessibilityHidden(true)
     }
@@ -57,4 +60,3 @@ extension ContainerColorRole {
         }
     }
 }
-

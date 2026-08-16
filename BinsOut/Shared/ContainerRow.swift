@@ -5,14 +5,13 @@ struct ContainerRow: View {
     var compact = false
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             ContainerIcon(container: container, size: compact ? .compact : .regular)
             Text(container.sourceLabel)
-                .bold()
+                .fontWeight(.semibold)
             Spacer()
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(container.sourceLabel)
     }
 }
-

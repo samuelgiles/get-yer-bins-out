@@ -23,15 +23,8 @@ struct NextCollectionView: View {
                     missingScheduleContent
                 }
             }
-            .navigationTitle(appModel.property?.displayName ?? "Next collection")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Refresh", systemImage: "arrow.clockwise") {
-                        Task { await appModel.refresh() }
-                    }
-                    .disabled(appModel.refreshState == .refreshing)
-                }
-            }
+            .navigationTitle("Next")
+            .navigationBarTitleDisplayMode(.inline)
         }
         .task {
             if appModel.snapshot == nil {
@@ -46,6 +39,15 @@ struct NextCollectionView: View {
     private func scheduleContent(snapshot: ScheduleSnapshot, next: CollectionOccurrence) -> some View {
         ScrollView {
             LazyVStack(alignment: .leading) {
+                if let property = appModel.property {
+                    PropertyScheduleHeader(
+                        propertyName: property.displayName,
+                        isRefreshing: appModel.refreshState == .refreshing
+                    ) {
+                        Task { await appModel.refresh() }
+                    }
+                }
+
                 if let refreshError = snapshot.lastRefreshError {
                     RefreshIssueBanner(message: refreshError)
                 }
