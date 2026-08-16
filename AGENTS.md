@@ -15,10 +15,10 @@ This project targets iOS 27 with the Xcode 27 toolchain. These rules adapt the m
 
 - Views consume domain models and observable app state; they do not decode transport DTOs, perform council requests, or own persistence.
 - All council access goes through `CollectionProvider`. Keep Bristol transport DTOs private to the provider and preserve unknown source container names.
-- Keep shared value models, schedule normalization, completion logic, and prepared display data free of app-only APIs so they can later be included in both the app and WidgetKit targets.
-- WidgetKit and ActivityKit extensions must not perform council networking or assume the app process is running. They render compact state supplied by ActivityKit or the App Group store.
-- App Intents must call one idempotent shared service. A future `Bins out` action means the containers have been put out, must be reversible in the app, and must not mean that Bristol completed collection.
-- Scheduled Live Activities must respect the eight-hour active limit. Local notifications remain the reliable fallback; background refresh is opportunistic, never an alarm.
+- Keep shared value models, completion logic, ActivityKit attributes/intents, and privacy-minimised widget presentation data free of app-only APIs. Files in `BinsOutShared` must compile in every target that includes them.
+- WidgetKit and ActivityKit extensions must not perform council networking or assume the app process is running. They render ActivityKit content state or the UPRN-free App Group payload published by the app.
+- Read-only App Intents answer through `SiriCollectionAnswerService` and the UPRN-free widget payload. The shared Live Activity `Bins out` intent writes only completion state, is idempotent, reloads affected system surfaces, and remains reversible in the app; it never means Bristol completed collection.
+- The Live Activity product window is 18:00 the evening before through 09:00 collection day. Split it into linked segments no longer than eight hours. Local notifications remain the reliable fallback; background refresh is opportunistic, never an alarm.
 
 ## Data, dates, and privacy
 
@@ -26,7 +26,7 @@ This project targets iOS 27 with the Xcode 27 toolchain. These rules adapt the m
 - Treat provider dates as date-only values in the `Europe/London` calendar. Never model them as UTC midnights or infer authoritative dates from a generic cadence. Test GMT and BST boundaries.
 - Stable occurrence identity must derive from property identity, local date, and normalized container IDs so it remains useful for notification, activity, widget, and EventKit reconciliation.
 - Persist the property and last good snapshot atomically. A failed refresh may add failure metadata but must not discard the last successful schedule.
-- Storage must accept an injected App Group container URL. Do not enable an App Group entitlement until an extension target needs it; audit `PrivacyInfo.xcprivacy` required-reason declarations when shared defaults or other covered APIs are introduced.
+- The app and widget extension share `group.com.samuelgiles.BinsOut`. Shared file stores must accept an injected container URL, write atomically, and avoid UPRNs, credentials, raw responses, and EventKit data in widget/Siri payloads. Audit `PrivacyInfo.xcprivacy` whenever covered APIs change.
 - The local property name is user-controlled and unverified. Send only the UPRN to the approved Bristol endpoint. Never log full UPRNs, addresses, credentials, raw property responses, calendar titles, or event IDs.
 - Bristol has authorized the public APIM client credential shipped by its official website. Keep it in exactly one replaceable `BristolAPIConfiguration` point and do not mistake obfuscation for protection: it is extractable from the app. Operational protection belongs at Bristol through endpoint scope, quotas, monitoring, revocation, and rotation.
 - Do not print the public client credential in routine logs, diagnostics, analytics, errors, screenshots, or test output. Any future credential that is actually secret must not be committed.
@@ -35,13 +35,15 @@ This project targets iOS 27 with the Xcode 27 toolchain. These rules adapt the m
 ## Permissions and system integrations
 
 - Ask for notification permission only after reminders are enabled, requesting only capabilities in use.
-- Ask for EventKit full event access only after the user explicitly enables selected-calendar reconciliation. Store calendar identifiers, verify writable calendars, preview changes, create individual all-day events, and handle revocation/deletion without duplicating events.
+- Ask for EventKit full event access only after the user explicitly enables calendar sync. Use Apple’s writable single-calendar chooser, then reconcile hands-off after selection, load/activation, successful schedule refresh, and `EKEventStoreChanged`. Create individual all-day events only through the provider horizon; update date/title/notes changes, remove obsolete future managed events, recover stable occurrence IDs, and suppress user-deleted events rather than recreating them.
 - Keep ActivityKit, WidgetKit, App Intents, EventKit, and notification code behind focused services that can be tested without presenting UI.
 
 ## Verification
 
 - Every change must build with Xcode 27 for an iPhone simulator. Run focused unit tests for changed core behavior before widening scope.
-- Unit tests cover UPRN validation, defensive provider decoding and errors, unknown containers, same-day grouping, stable identity, `Europe/London` DST transitions, persistence, and last-good-cache behavior.
-- Add useful SwiftUI previews for fresh, empty, loading/error/offline, and accessibility-size states. Before shipping system features, verify Live Activities, notifications, App Group sharing, and EventKit on physical hardware.
+- Unit tests cover UPRN validation, defensive provider decoding and errors, unknown containers, same-day grouping, stable identity, `Europe/London` DST transitions, persistence, last-good-cache behavior, calendar reconciliation, notification/Live Activity plans, widget payload/timeline behavior, and Siri answers.
+- Every user-facing SwiftUI view needs a deterministic `#Preview`. Substantial screens and system surfaces need named state previews; keep fixture/dependency setup centralized and target-specific. Previews must never request networking, permissions, EventKit, Keychain, or real App Group data, and must contain no real UPRN or address.
+- Widget countdowns and timeline transitions use `Europe/London` local calendar days, not elapsed UTC hours. Preserve semantic background plus symbol/text identification and the complete medium “Put out” list.
+- Before shipping system features, verify Live Activities, notifications, App Group sharing, widget placement, Siri phrases, and EventKit on physical hardware.
 - Do not weaken assertions, swallow decoding failures, or replace authoritative data with guessed recurrence merely to make a test pass.
 - Live Bristol integration tests are explicitly opt-in and require a locally supplied authorized UPRN. CI and the default test scheme must remain deterministic and network-independent.

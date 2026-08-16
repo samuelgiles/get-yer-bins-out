@@ -1,12 +1,37 @@
 # Bins Out
 
-Bins Out is an iOS 27 SwiftUI app for property-specific Bristol bin and recycling collection days.
+Bins Out is a native iOS 27 SwiftUI app for property-specific Bristol bin and recycling collection days. It talks directly to Bristol City Council, keeps the last good schedule on-device, and has no developer-operated backend, analytics SDK, postcode lookup, or location access.
 
-Normal app launches use `BristolCollectionProvider` and the council-authorized public client configuration. Previews and unit tests inject the deterministic fixture provider, and a developer can launch the app with `BINS_OUT_USE_FIXTURE=1` when intentionally working offline.
+## What works
 
-The Bristol API credential is public client configuration authorized by Bristol City Council and centralized in `BristolAPIConfiguration`. It is necessarily extractable from the binary. Endpoint scope, quotas, monitoring, revocation, and rotation on Bristol's side—not obfuscation in the app—must provide operational protection. The app does not print the value.
+- Onboarding selects a council, validates an exact UPRN string, lets the user choose a private property label, previews the returned schedule, and saves it locally. Bristol City Council is currently the only provider.
+- Next groups containers on the same `Europe/London` local date, keeps cached data after transient failures, shows six weeks by default, and expands to the provider-backed 24-week view without inventing recurrence.
+- Sort presents concise Bristol container cards and links to official council guidance rather than copying a council sorting database.
+- Settings manages the saved property, data freshness, local reminders, Live Activities, and hands-off selected-calendar synchronization.
+- Small and medium widgets read a UPRN-free App Group payload. They use semantic recycling/bin/garden backgrounds, show the property, collection type, short date and a `Today` / `Tomorrow` / `In N days` countdown, and keep the full medium-size “Put out” list.
+- App Intents answer the next collection, when containers should go out, and Bristol glass-bottle sorting questions from the same privacy-minimised App Group payload. A separate shortcut opens the official glass guidance.
+- Deterministic previews cover the app’s major states, both widget families, and Lock Screen plus Dynamic Island Live Activity presentations without networking or permissions.
 
-Build and test with the Xcode 27 beta:
+## Data and privacy
+
+Normal app launches use `BristolCollectionProvider`. Previews and unit tests inject deterministic fixtures, and developers can launch with `BINS_OUT_USE_FIXTURE=1` for deliberate offline work.
+
+The Bristol API credential is council-authorized public client configuration, centralized in `BristolAPIConfiguration`, and necessarily extractable from the binary. Bristol must protect it operationally through endpoint scope, quotas, monitoring, revocation, and rotation—not obfuscation. The app does not log it.
+
+The live request sends only the exact user-entered UPRN string to Bristol’s approved `NextCollectionDates` endpoint. The widget and Siri payload contains the local property label, scheduled local dates, container labels, and freshness state, but no UPRN, credential, raw response, or EventKit data. The selected property can sync through iCloud Keychain; the schedule cache remains local/App Group data.
+
+## System features
+
+- Evening reminders are opt-in local notifications, defaulting to 17:45 on the evening before collection. Notification permission is requested only after the user enables reminders.
+- The opt-in Live Activity covers 18:00 on the evening before through 09:00 on collection day. It uses two linked pre-scheduled segments so each remains within iOS’s eight-hour limit; local notifications remain the reliable fallback. The shared `Bins out` action records only that the user put containers out and can be undone in the app.
+- Settings includes an isolated, immediately-started Live Activity preview. Closing it does not complete or cancel a real occurrence.
+- Calendar sync requests full EventKit access only after opt-in and uses Apple’s writable single-calendar chooser. Once a calendar is selected, reconciliation runs automatically after selection, app load/activation, schedule refreshes, and EventKit store changes. It creates individual all-day events only through Bristol’s authoritative horizon, updates changed dates or container details, removes obsolete future managed events, and suppresses user-deleted events rather than silently recreating them.
+
+The app and WidgetKit extension use the `group.com.samuelgiles.BinsOut` App Group. Configure that capability for both bundle identifiers in the signing team before device testing.
+
+## Build and test
+
+Use the Xcode 27 toolchain and an iOS 27 simulator:
 
 ```sh
 DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
@@ -18,15 +43,6 @@ DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=27.0' test
 ```
 
-The live client posts only the exact UPRN string to Bristol City Council's approved `NextCollectionDates` endpoint. No postcode, location, analytics, account, or developer-operated backend is used.
+The default test run is deterministic. The live Bristol XCTest is skipped unless an authorized developer locally supplies both `BINS_OUT_RUN_LIVE_TESTS=1` and `BINS_OUT_LIVE_TEST_UPRN`; never add a real property identifier or address to source, schemes, fixtures, snapshots, screenshots, or logs.
 
-## System features
-
-- Evening reminders are opt-in local notifications, defaulting to 17:45 on the evening before collection. Notification permission is requested only when the toggle is enabled.
-- The opt-in Live Activity covers the requested 18:00–09:00 local window with two linked, pre-scheduled segments because iOS limits one standard Live Activity to eight hours. Both segments use the same authenticated `Bins out` intent, App Group completion state, and notification cancellation path. The system requires an alert when each scheduled segment begins.
-- Settings includes a transient Live Activity preview toggle. It uses the next saved collection, starts immediately, and has isolated identity so closing it never marks or cancels the real occurrence.
-- Calendar sync requests full EventKit access only after opt-in, presents Apple's writable single-calendar chooser, previews individual all-day additions/updates/removals, and reconciles stable occurrence and event identifiers. A Calendar event that the user deletes is suppressed rather than silently recreated.
-
-The app and WidgetKit extension use the `group.com.samuelgiles.BinsOut` App Group. Configure that capability for both bundle identifiers in the signing team before device testing. The unsigned simulator build exercises compilation and pure reconciliation logic, but notification delivery, the overnight Live Activity handoff, locked-device intent authentication, App Group signing, and EventKit UI still require physical-device verification.
-
-The live XCTest is skipped by default. For an authorized local run, supply `BINS_OUT_RUN_LIVE_TESTS=1` and `BINS_OUT_LIVE_TEST_UPRN` through a local test environment; never add a real property identifier or display name to the scheme or repository.
+Simulator builds cover compilation and pure reconciliation behavior. Notification delivery, the overnight Live Activity handoff, locked-device intent authentication, App Group signing, widget placement, Siri phrasing, and EventKit UI still need physical-device checks before release.
