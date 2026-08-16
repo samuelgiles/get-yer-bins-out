@@ -23,7 +23,10 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Link("Check Bristol service updates", destination: BristolOfficialLinks.serviceUpdates)
+                    officialLink(
+                        "Check Bristol service updates",
+                        destination: BristolOfficialLinks.serviceUpdates
+                    )
                 } footer: {
                     Text("Collection dates are scheduled dates, not confirmation that a crew completed collection.")
                 }
@@ -106,11 +109,14 @@ struct SettingsView: View {
                 Label("Development sample data", systemImage: "testtube.2")
                     .foregroundStyle(.orange)
             }
-            Link("Bristol collection information", destination: BristolOfficialLinks.collectionInformation)
+            officialLink(
+                "Bristol collection information",
+                destination: BristolOfficialLinks.collectionInformation
+            )
         } header: {
             Text("Collection data")
         } footer: {
-            Text("Only the UPRN is sent to Bristol. Your selected property syncs through iCloud Keychain; each device keeps and refreshes its own last-good schedule cache.")
+            Text("Only the UPRN is sent to Bristol. Your selected property syncs to iCloud.")
         }
     }
 
@@ -146,8 +152,6 @@ struct SettingsView: View {
             permissionLabel("Notifications", allowed: appModel.notificationPermission == .allowed)
         } header: {
             Text("Reminders")
-        } footer: {
-            Text("The default 17:45 reminder is separate from the Live Activity’s required 18:00 start alert.")
         }
     }
 
@@ -178,8 +182,6 @@ struct SettingsView: View {
             )
         } header: {
             Text("Lock Screen")
-        } footer: {
-            Text("Preview starts immediately with your next saved collection and can be ended here without marking it complete. The scheduled 18:00–09:00 window uses two linked segments to stay within iOS’s eight-hour limit; notifications remain the fallback.")
         }
     }
 
@@ -219,8 +221,6 @@ struct SettingsView: View {
             permissionLabel("Full Calendar access", allowed: appModel.calendarPermission == .allowed)
         } header: {
             Text("Calendar")
-        } footer: {
-            Text("Events are individual all-day dates in your selected writable calendar. Bins Out keeps them up to date from Bristol’s returned schedule and never guesses a recurrence. Calendar alerts may duplicate app reminders if you add them separately.")
         }
     }
 
@@ -243,5 +243,13 @@ struct SettingsView: View {
             systemImage: allowed ? "checkmark.circle.fill" : "exclamationmark.circle"
         )
         .foregroundStyle(allowed ? .green : .secondary)
+    }
+
+    private func officialLink(_ title: String, destination: URL) -> some View {
+        Link(destination: destination) {
+            Label(title, systemImage: "arrow.up.right.square")
+        }
+        .accessibilityLabel("\(title) on Bristol City Council’s website")
+        .accessibilityHint("Opens in Safari")
     }
 }
