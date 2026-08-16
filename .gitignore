@@ -1,0 +1,46 @@
+# macOS Finder metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode user state and generated build output
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+*.xcresult
+*.profraw
+*.profdata
+TestResults/
+
+# Swift Package Manager build products, if the project adopts packages later.
+.build/
+Packages/
+
+# Keep machine-specific launch settings and signing material out of the repository.
+*.xcscheme.local
+*.mobileprovision
+*.p12
+*.cer
+*.pem
+*.p8
+
+# Local-only configuration and opt-in integration-test inputs. Commit documented
+# examples only; do not commit secrets or manually authorized test properties.
+.env
+.env.*
+!.env.example
+*.xcconfig.local
+Configuration/Local.xcconfig
+Configuration/Developer.xcconfig
+Configuration/Secrets.xcconfig
+Local/
+
+# Generated Xcode/automation logs and reports.
+*.log
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
