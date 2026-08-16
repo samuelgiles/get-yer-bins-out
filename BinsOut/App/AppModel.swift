@@ -466,10 +466,34 @@ final class AppModel {
     }
 
 #if DEBUG
-    func prepareForPreview(property: Property?, snapshot: ScheduleSnapshot?) {
+    func prepareForPreview(
+        property: Property?,
+        snapshot: ScheduleSnapshot?,
+        loadState: AppLoadState = .ready,
+        refreshState: RefreshState = .idle,
+        settings: UserSettings = UserSettings(),
+        completionState: CompletionState = CompletionState(),
+        notificationPermission: NotificationPermissionStatus = .notDetermined,
+        calendarPermission: CalendarPermissionStatus = .notDetermined,
+        liveActivityResult: LiveActivityReconciliationResult = .disabled,
+        standaloneErrorMessage: String? = nil,
+        integrationMessage: String? = nil,
+        propertySyncMessage: String? = nil,
+        isLiveActivityPreviewActive: Bool = false
+    ) {
         self.property = property
         self.snapshot = snapshot
-        loadState = .ready
+        self.loadState = loadState
+        self.refreshState = refreshState
+        self.settings = settings
+        self.completionState = completionState
+        self.notificationPermission = notificationPermission
+        self.calendarPermission = calendarPermission
+        self.liveActivityResult = liveActivityResult
+        self.standaloneErrorMessage = standaloneErrorMessage
+        self.integrationMessage = integrationMessage
+        self.propertySyncMessage = propertySyncMessage
+        self.isLiveActivityPreviewActive = isLiveActivityPreviewActive
     }
 #endif
 

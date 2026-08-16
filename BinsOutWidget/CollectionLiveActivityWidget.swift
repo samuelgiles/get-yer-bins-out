@@ -163,35 +163,81 @@ private enum ActivityLinks {
 }
 
 #if DEBUG
-private let previewAttributes = CollectionActivityAttributes(
-    occurrenceID: "preview-occurrence",
-    scheduleID: "preview-occurrence|segment-0",
-    collectionDate: "Friday, 21 August 2026",
-    collectionDateShort: "21 Aug 2026",
-    containers: [
-        CollectionActivityAttributes.Container(
-            id: "food",
-            name: "Food waste bin",
-            symbolName: "fork.knife"
-        ),
-        CollectionActivityAttributes.Container(
-            id: "green",
-            name: "Green recycling box",
-            symbolName: "arrow.3.trianglepath"
-        ),
-    ]
-)
+// Lock Screen previews
 
-#Preview("Lock Screen", as: .content, using: previewAttributes) {
+#Preview("Live Activity — Recycling — Lock Screen", as: .content, using: LiveActivityPreviewData.recycling) {
     CollectionLiveActivityWidget()
 } contentStates: {
-    CollectionActivityAttributes.ContentState(isPutOut: false)
-    CollectionActivityAttributes.ContentState(isPutOut: true)
+    LiveActivityPreviewData.upcoming
+    LiveActivityPreviewData.complete
 }
 
-#Preview("Dynamic Island", as: .dynamicIsland(.expanded), using: previewAttributes) {
+#Preview("Live Activity — Wheelie bin and recycling — Lock Screen", as: .content, using: LiveActivityPreviewData.wheelieBinMixed) {
     CollectionLiveActivityWidget()
 } contentStates: {
-    CollectionActivityAttributes.ContentState(isPutOut: false)
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Garden waste — Lock Screen", as: .content, using: LiveActivityPreviewData.gardenWaste) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+// Dynamic Island previews. ActivityKit supports expanded, compact, and minimal
+// canvas presentations; each collection type gets all three.
+
+#Preview("Live Activity — Recycling — Dynamic Island expanded", as: .dynamicIsland(.expanded), using: LiveActivityPreviewData.recycling) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Recycling — Dynamic Island compact", as: .dynamicIsland(.compact), using: LiveActivityPreviewData.recycling) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Recycling — Dynamic Island minimal", as: .dynamicIsland(.minimal), using: LiveActivityPreviewData.recycling) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Wheelie bin and recycling — Dynamic Island expanded", as: .dynamicIsland(.expanded), using: LiveActivityPreviewData.wheelieBinMixed) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Wheelie bin and recycling — Dynamic Island compact", as: .dynamicIsland(.compact), using: LiveActivityPreviewData.wheelieBinMixed) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Wheelie bin and recycling — Dynamic Island minimal", as: .dynamicIsland(.minimal), using: LiveActivityPreviewData.wheelieBinMixed) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Garden waste — Dynamic Island expanded", as: .dynamicIsland(.expanded), using: LiveActivityPreviewData.gardenWaste) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Garden waste — Dynamic Island compact", as: .dynamicIsland(.compact), using: LiveActivityPreviewData.gardenWaste) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
+}
+
+#Preview("Live Activity — Garden waste — Dynamic Island minimal", as: .dynamicIsland(.minimal), using: LiveActivityPreviewData.gardenWaste) {
+    CollectionLiveActivityWidget()
+} contentStates: {
+    LiveActivityPreviewData.upcoming
 }
 #endif

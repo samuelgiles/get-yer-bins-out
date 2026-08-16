@@ -312,7 +312,7 @@ private struct WidgetUnavailableView: View {
 
 private extension WidgetSchedulePayload {
     static let placeholder = WidgetSchedulePayload(
-        propertyDisplayName: "Home",
+        propertyDisplayName: "Preview residence",
         occurrences: [
             WidgetCollectionOccurrence(
                 id: "preview-collection",
@@ -330,49 +330,75 @@ private extension WidgetSchedulePayload {
 }
 
 #if DEBUG
-#Preview("Small — scheduled", as: .systemSmall) {
+#Preview("Small — Recycling only (green background)", as: .systemSmall) {
     NextCollectionWidget()
 } timeline: {
-    NextCollectionWidgetEntry(
-        date: Date(timeIntervalSince1970: 1_786_780_800),
-        payload: .placeholder
-    )
+    WidgetPreviewData.entry(payload: WidgetPreviewData.recyclingOnly)
 }
 
-#Preview("Medium — scheduled", as: .systemMedium) {
+#Preview("Medium — Recycling only (green background)", as: .systemMedium) {
     NextCollectionWidget()
 } timeline: {
-    NextCollectionWidgetEntry(
-        date: Date(timeIntervalSince1970: 1_786_780_800),
-        payload: .placeholder
-    )
+    WidgetPreviewData.entry(payload: WidgetPreviewData.recyclingOnly)
 }
 
-#Preview("Small — stale", as: .systemSmall) {
+#Preview("Small — Wheelie bin and recycling (black background)", as: .systemSmall) {
     NextCollectionWidget()
 } timeline: {
-    NextCollectionWidgetEntry(
-        date: Date(timeIntervalSince1970: 1_786_780_800),
-        payload: WidgetSchedulePayload(
-            propertyDisplayName: WidgetSchedulePayload.placeholder.propertyDisplayName,
-            occurrences: WidgetSchedulePayload.placeholder.occurrences,
-            fetchedAt: WidgetSchedulePayload.placeholder.fetchedAt,
-            hasRefreshIssue: true
-        )
-    )
+    WidgetPreviewData.entry(payload: WidgetPreviewData.wheelieBinMixed)
 }
 
-#Preview("Medium — empty", as: .systemMedium) {
+#Preview("Medium — Wheelie bin and recycling (complete Put out list)", as: .systemMedium) {
     NextCollectionWidget()
 } timeline: {
-    NextCollectionWidgetEntry(
-        date: Date(timeIntervalSince1970: 1_786_780_800),
-        payload: WidgetSchedulePayload(
-            propertyDisplayName: "Home",
-            occurrences: [],
-            fetchedAt: Date(timeIntervalSince1970: 1_786_867_200),
-            hasRefreshIssue: false
-        )
-    )
+    WidgetPreviewData.entry(payload: WidgetPreviewData.wheelieBinMixed)
+}
+
+#Preview("Small — Garden waste", as: .systemSmall) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.gardenWaste)
+}
+
+#Preview("Medium — Garden waste", as: .systemMedium) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.gardenWaste)
+}
+
+#Preview("Small — Stale recycling", as: .systemSmall) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.staleRecycling)
+}
+
+#Preview("Medium — Stale recycling", as: .systemMedium) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.staleRecycling)
+}
+
+#Preview("Small — Empty schedule", as: .systemSmall) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.empty)
+}
+
+#Preview("Medium — Empty schedule", as: .systemMedium) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.empty)
+}
+
+#Preview("Small — Not configured", as: .systemSmall) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.notConfigured)
+}
+
+#Preview("Medium — Not configured", as: .systemMedium) {
+    NextCollectionWidget()
+} timeline: {
+    WidgetPreviewData.entry(payload: WidgetPreviewData.notConfigured)
 }
 #endif

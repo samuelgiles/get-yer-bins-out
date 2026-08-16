@@ -69,11 +69,11 @@ enum LiveActivityPlanBuilder {
             return SharedActivitySchedule(isEnabled: false, generatedAt: now)
         }
 
-        let segments = snapshot.occurrences
+        let activitySegments = snapshot.occurrences
             .filter { !completionState.isPutOut($0.id) }
             .flatMap { occurrence in segments(for: occurrence, now: now) }
 
-        return SharedActivitySchedule(isEnabled: true, segments: segments, generatedAt: now)
+        return SharedActivitySchedule(isEnabled: true, segments: activitySegments, generatedAt: now)
     }
 
     static func previewSegment(

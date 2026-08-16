@@ -47,7 +47,7 @@ struct PropertyScheduleHeader: View {
 #if DEBUG
 #Preview("Schedule header · Accessibility") {
     PropertyScheduleHeader(
-        propertyName: "Riverside flat in Bristol",
+        propertyName: "Preview residence",
         isRefreshing: false,
         refresh: {}
     )
