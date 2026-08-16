@@ -102,20 +102,21 @@ private struct NextCollectionWidgetView: View {
                     symbolName: "calendar.badge.exclamationmark",
                     propertyDisplayName: propertyDisplayName
                 )
-            case let .scheduled(propertyDisplayName, occurrence, fetchedAt, isStale):
+            case let .scheduled(propertyDisplayName, occurrence, _, isStale):
+                let countdown = occurrence.localDate.countdownDescription(relativeTo: entry.date)
                 switch family {
                 case .systemMedium:
                     MediumCollectionWidgetView(
                         propertyDisplayName: propertyDisplayName,
                         occurrence: occurrence,
-                        freshness: freshnessText(fetchedAt: fetchedAt, isStale: isStale),
+                        countdown: countdown,
                         isStale: isStale
                     )
                 default:
                     SmallCollectionWidgetView(
                         propertyDisplayName: propertyDisplayName,
                         occurrence: occurrence,
-                        freshness: freshnessText(fetchedAt: fetchedAt, isStale: isStale),
+                        countdown: countdown,
                         isStale: isStale
                     )
                 }
@@ -125,7 +126,7 @@ private struct NextCollectionWidgetView: View {
             widgetBackground
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(entry.presentation.accessibilitySummary)
+        .accessibilityLabel(entry.presentation.accessibilitySummary(relativeTo: entry.date))
     }
 
     @ViewBuilder
@@ -150,7 +151,7 @@ private struct NextCollectionWidgetView: View {
 private struct SmallCollectionWidgetView: View {
     let propertyDisplayName: String
     let occurrence: WidgetCollectionOccurrence
-    let freshness: String
+    let countdown: String
     let isStale: Bool
 
     var body: some View {
@@ -177,7 +178,7 @@ private struct SmallCollectionWidgetView: View {
 
             Spacer(minLength: 0)
 
-            WidgetFreshnessLabel(text: freshness, isStale: isStale, onColoredBackground: true)
+            WidgetCountdownLabel(text: countdown, isStale: isStale)
         }
     }
 }
@@ -185,19 +186,13 @@ private struct SmallCollectionWidgetView: View {
 private struct MediumCollectionWidgetView: View {
     let propertyDisplayName: String
     let occurrence: WidgetCollectionOccurrence
-    let freshness: String
+    let countdown: String
     let isStale: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 7) {
                 WidgetPropertyHeading(propertyDisplayName: propertyDisplayName, onColoredBackground: true)
-
-                Text(occurrence.localDate.shortOrdinalDescription)
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.82)
 
                 HStack(spacing: 6) {
                     Image(systemName: occurrence.summary.symbolName)
@@ -210,8 +205,15 @@ private struct MediumCollectionWidgetView: View {
                 }
                 .foregroundStyle(.white)
 
+                Text(occurrence.localDate.shortOrdinalDescription)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+
+                WidgetCountdownLabel(text: countdown, isStale: isStale)
+
                 Spacer(minLength: 0)
-                WidgetFreshnessLabel(text: freshness, isStale: isStale, onColoredBackground: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -246,21 +248,23 @@ private struct WidgetPropertyHeading: View {
     }
 }
 
-private struct WidgetFreshnessLabel: View {
+private struct WidgetCountdownLabel: View {
     let text: String
     let isStale: Bool
-    var onColoredBackground = false
 
     var body: some View {
-        Label(text, systemImage: isStale ? "arrow.triangle.2.circlepath" : "clock")
-            .font(.caption2)
-            .foregroundStyle(
-                onColoredBackground
-                    ? .white.opacity(isStale ? 0.82 : 0.68)
-                    : isStale ? .secondary : .secondary.opacity(0.7)
-            )
-            .lineLimit(1)
-            .minimumScaleFactor(0.82)
+        HStack(spacing: 5) {
+            Text(text)
+                .font(.subheadline.weight(.semibold))
+            if isStale {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.caption2)
+                    .accessibilityHidden(true)
+            }
+        }
+        .foregroundStyle(.white.opacity(isStale ? 0.92 : 0.78))
+        .lineLimit(1)
+        .minimumScaleFactor(0.82)
     }
 }
 

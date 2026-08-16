@@ -85,6 +85,27 @@ final class WidgetSchedulePayloadTests: XCTestCase {
         XCTAssertEqual(WidgetLocalDate(year: 2026, month: 8, day: 23).shortOrdinalDescription, "Sun 23rd")
     }
 
+    func testCountdownUsesEuropeLondonCalendarDays() {
+        let collectionDate = WidgetLocalDate(year: 2026, month: 3, day: 29)
+
+        XCTAssertEqual(
+            collectionDate.countdownDescription(
+                relativeTo: WidgetLocalDate(year: 2026, month: 3, day: 27).dateAtNoon
+            ),
+            "In 2 days"
+        )
+        XCTAssertEqual(
+            collectionDate.countdownDescription(
+                relativeTo: WidgetLocalDate(year: 2026, month: 3, day: 28).dateAtNoon
+            ),
+            "Tomorrow"
+        )
+        XCTAssertEqual(
+            collectionDate.countdownDescription(relativeTo: collectionDate.dateAtNoon),
+            "Today"
+        )
+    }
+
     func testWidgetBackgroundStylePrefersBinsForCombinedCollection() {
         let recycling = WidgetCollectionSummary.make(for: [
             WidgetContainer(id: "green", name: "Green recycling box", symbolName: "arrow.3.trianglepath"),
@@ -129,7 +150,7 @@ final class WidgetSchedulePayloadTests: XCTestCase {
         XCTAssertEqual(WidgetSchedulePayload.empty.presentation(at: now), .notConfigured)
     }
 
-    func testTimelineAdvancesOnTheDayAfterEachKnownCollection() {
+    func testTimelineUpdatesCountdownDailyThenAdvancesAfterCollection() throws {
         let now = Date(timeIntervalSince1970: 1_786_810_000)
         let payload = WidgetSchedulePayload(
             propertyDisplayName: "Home",
@@ -151,10 +172,15 @@ final class WidgetSchedulePayloadTests: XCTestCase {
 
         let dates = payload.timelineDates(startingAt: now)
 
-        XCTAssertEqual(dates.count, 3)
-        XCTAssertEqual(WidgetLocalDate(date: dates[1]), WidgetLocalDate(year: 2026, month: 8, day: 22))
-        XCTAssertEqual(WidgetLocalDate(date: dates[2]), WidgetLocalDate(year: 2026, month: 8, day: 29))
-        XCTAssertGreaterThan(payload.suggestedReloadDate(after: now), dates[2])
+        XCTAssertEqual(dates.count, 8)
+        XCTAssertEqual(WidgetLocalDate(date: dates[1]), WidgetLocalDate(year: 2026, month: 8, day: 16))
+        XCTAssertEqual(WidgetLocalDate(date: dates[6]), WidgetLocalDate(year: 2026, month: 8, day: 21))
+        XCTAssertEqual(WidgetLocalDate(date: dates[7]), WidgetLocalDate(year: 2026, month: 8, day: 22))
+        XCTAssertGreaterThan(payload.suggestedReloadDate(after: now), dates[7])
+
+        let followingTimeline = payload.timelineDates(startingAt: dates[7])
+        let followingLastDate = try XCTUnwrap(followingTimeline.last)
+        XCTAssertEqual(WidgetLocalDate(date: followingLastDate), WidgetLocalDate(year: 2026, month: 8, day: 29))
     }
 
     func testFileStoreRoundTripsInInjectedDirectory() async throws {

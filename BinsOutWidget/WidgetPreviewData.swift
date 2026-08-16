@@ -4,7 +4,7 @@ import Foundation
 /// Fixed, privacy-safe WidgetKit preview data. This file belongs to the widget
 /// target so previews do not depend on app-only services or fixture types.
 enum WidgetPreviewData {
-    static let date = Date(timeIntervalSince1970: 1_786_780_800)
+    static let date = Date(timeIntervalSince1970: 1_786_867_200)
     static let propertyDisplayName = "Preview residence"
 
     static let recyclingOnly = payload(

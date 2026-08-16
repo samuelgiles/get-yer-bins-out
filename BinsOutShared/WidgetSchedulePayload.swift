@@ -59,19 +59,28 @@ struct WidgetSchedulePayload: Codable, Equatable, Sendable {
         )
     }
 
-    /// WidgetKit may render later than the requested time. The payload contains
-    /// every known upcoming occurrence, so date-only entries move to the next
-    /// known collection at the start of the following Europe/London day.
+    /// Supplies a new entry at each Europe/London midnight through the day
+    /// after the next collection. This keeps the visible countdown accurate,
+    /// then advances the widget to the following saved occurrence.
     func timelineDates(startingAt date: Date) -> [Date] {
         let currentDate = WidgetLocalDate(date: date)
-        let transitionDates = Set(
-            occurrences
-                .filter { $0.localDate >= currentDate }
-                .map { $0.localDate.adding(days: 1).startOfDay }
-                .filter { $0 > date }
-        )
+        guard let nextOccurrence = occurrences.first(where: { $0.localDate >= currentDate }) else {
+            return [date]
+        }
 
-        return [date] + transitionDates.sorted()
+        let finalDate = nextOccurrence.localDate.adding(days: 1)
+        var localDate = currentDate.adding(days: 1)
+        var transitionDates: [Date] = []
+
+        while localDate <= finalDate {
+            let transitionDate = localDate.startOfDay
+            if transitionDate > date {
+                transitionDates.append(transitionDate)
+            }
+            localDate = localDate.adding(days: 1)
+        }
+
+        return [date] + transitionDates
     }
 
     func suggestedReloadDate(after date: Date) -> Date {
@@ -185,6 +194,26 @@ struct WidgetLocalDate: Codable, Hashable, Comparable, Sendable {
         return "\(weekday) \(day)\(Self.ordinalSuffix(for: day))"
     }
 
+    func countdownDescription(relativeTo date: Date) -> String {
+        let currentDate = WidgetLocalDate(date: date)
+        let days = Self.calendar.dateComponents(
+            [.day],
+            from: currentDate.dateAtNoon,
+            to: dateAtNoon
+        ).day ?? 0
+
+        switch days {
+        case ..<0:
+            return "Collection passed"
+        case 0:
+            return "Today"
+        case 1:
+            return "Tomorrow"
+        default:
+            return "In \(days) days"
+        }
+    }
+
     func adding(days: Int) -> WidgetLocalDate {
         guard let date = Self.calendar.date(byAdding: .day, value: days, to: dateAtNoon) else {
             preconditionFailure("Gregorian date arithmetic failed")
@@ -235,7 +264,7 @@ enum WidgetSchedulePresentation: Equatable, Sendable {
         isStale: Bool
     )
 
-    var accessibilitySummary: String {
+    func accessibilitySummary(relativeTo date: Date) -> String {
         switch self {
         case .notConfigured:
             return "Set up Bins Out to see your next scheduled collection."
@@ -243,7 +272,8 @@ enum WidgetSchedulePresentation: Equatable, Sendable {
             return "\(propertyDisplayName). No upcoming scheduled collections are saved."
         case let .scheduled(propertyDisplayName, occurrence, _, isStale):
             let freshness = isStale ? " The saved schedule may be out of date." : ""
-            return "\(propertyDisplayName). Next scheduled collection: \(occurrence.summary.title), \(occurrence.localDate.fullDescription). Containers: \(occurrence.containers.map(\.name).joined(separator: ", ")).\(freshness)"
+            let countdown = occurrence.localDate.countdownDescription(relativeTo: date)
+            return "\(propertyDisplayName). Next scheduled collection: \(occurrence.summary.title), \(occurrence.localDate.fullDescription), \(countdown). Containers: \(occurrence.containers.map(\.name).joined(separator: ", ")).\(freshness)"
         }
     }
 }
