@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+		The WidgetKit/ActivityKit extension performs no networking at all. It renders
+		the UPRN-free App Group payload the app publishes, plus ActivityKit content
+		state, so nothing it handles leaves the device and nothing it handles is
+		collected.
+
+		NSPrivacyAccessedAPITypes is intentionally empty: the extension reads its
+		payload with FileManager.fileExists(atPath:) and Data(contentsOf:), neither of
+		which is a required-reason API, and it uses no UserDefaults.
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

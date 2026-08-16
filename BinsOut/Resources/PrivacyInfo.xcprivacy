@@ -2,11 +2,49 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSPrivacyAccessedAPITypes</key>
+	<!--
+		Bins Out has no developer-operated backend, analytics SDK, advertising SDK,
+		account system, tracking domain, postcode lookup, location access, or
+		third-party runtime dependency.
+
+		NSPrivacyCollectedDataTypes is intentionally empty. Apple defines "collect"
+		as transmitting data off the device in a way that allows the developer or
+		the developer's third-party partners to access it beyond servicing the
+		request in real time. Every flow in this app was assessed against that
+		definition and none of them meet it:
+
+		  - UPRN to Bristol. The user-entered UPRN is POSTed to Bristol City
+		    Council's NextCollectionDates endpoint with no account, device, or user
+		    identifier alongside it. Bristol is the user's own waste authority and
+		    the source of the schedule, not a partner of this developer, and the
+		    developer never receives or has access to the request or any log of it.
+		    This is a publisher decision recorded on 2026-08-16; the flow itself is
+		    disclosed in full in PRIVACY.md regardless of how it is classified here.
+		  - App Group files (property, schedule, settings, widget/Siri payload)
+		    never leave the device.
+		  - The selected property syncs through the user's own synchronizable
+		    iCloud Keychain. Apple operates that transport end-to-end encrypted and
+		    the developer has no access to it.
+		  - EventKit events are written into a calendar the user selects. Any onward
+		    sync is performed by the user's own calendar account, not by this app.
+		  - Live Activities are requested with pushType: nil, so ActivityKit state
+		    stays on device.
+		  - Notifications are local; no push tokens or remote notifications.
+
+		NSPrivacyAccessedAPITypes is intentionally empty: neither this target nor
+		the widget extension calls any API in the file-timestamp, system-boot-time,
+		disk-space, active-keyboard, or user-defaults required-reason categories.
+		Persistence uses FileManager.fileExists(atPath:), Data(contentsOf:), and
+		Data.write(to:options:), none of which are required-reason APIs, and the
+		project uses no UserDefaults or @AppStorage anywhere.
+	-->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array/>
-	<key>NSPrivacyTracking</key>
-	<false/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
 </dict>
 </plist>
