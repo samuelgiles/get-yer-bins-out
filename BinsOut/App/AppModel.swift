@@ -52,6 +52,8 @@ final class AppModel {
     private let propertySyncStore: any PropertySyncing
     private let completionStore: any CompletionStoring
     private let activityScheduleStore: any SharedActivityScheduleStoring
+    private let widgetPayloadStore: any WidgetPayloadStoring
+    private let widgetTimelineReloader: any WidgetTimelineReloading
     private let notificationService: any NotificationScheduling
     private let liveActivityService: any LiveActivityScheduling
     private let calendarService: any CalendarSyncServicing
@@ -64,6 +66,8 @@ final class AppModel {
         propertySyncStore: any PropertySyncing = NoopPropertySyncStore(),
         completionStore: any CompletionStoring = VolatileCompletionStore(),
         activityScheduleStore: any SharedActivityScheduleStoring = FileSharedActivityScheduleStore(),
+        widgetPayloadStore: any WidgetPayloadStoring = FileWidgetPayloadStore(),
+        widgetTimelineReloader: any WidgetTimelineReloading = WidgetTimelineReloader(),
         notificationService: any NotificationScheduling = NoopNotificationService(),
         liveActivityService: any LiveActivityScheduling = NoopLiveActivityService(),
         calendarService: any CalendarSyncServicing = NoopCalendarService(),
@@ -74,6 +78,8 @@ final class AppModel {
         self.propertySyncStore = propertySyncStore
         self.completionStore = completionStore
         self.activityScheduleStore = activityScheduleStore
+        self.widgetPayloadStore = widgetPayloadStore
+        self.widgetTimelineReloader = widgetTimelineReloader
         self.notificationService = notificationService
         self.liveActivityService = liveActivityService
         self.calendarService = calendarService
@@ -111,6 +117,7 @@ final class AppModel {
             loadState = .ready
             await refreshPermissionStatuses()
             await reconcileSystemFeatures()
+            await publishWidgetPayload()
         } catch {
             loadState = .failed(Self.message(for: error))
         }
@@ -139,6 +146,7 @@ final class AppModel {
         standaloneErrorMessage = nil
         try await persist()
         await pushPropertyToSync()
+        await publishWidgetPayload()
         await reconcileSystemFeatures()
     }
 
@@ -159,14 +167,17 @@ final class AppModel {
             let refreshedSnapshot = try await provider.schedule(for: property)
             snapshot = refreshedSnapshot
             try await persist()
+            await publishWidgetPayload()
             await reconcileSystemFeatures()
         } catch {
             let message = Self.message(for: error)
             if let cachedSnapshot = snapshot {
                 snapshot = cachedSnapshot.recordingRefreshFailure(at: now(), message: message)
                 try? await persist()
+                await publishWidgetPayload()
             } else {
                 standaloneErrorMessage = message
+                await publishWidgetPayload()
             }
         }
         refreshState = .idle
@@ -433,6 +444,24 @@ final class AppModel {
             propertySyncMessage = nil
         } catch {
             propertySyncMessage = "iCloud Keychain sync is unavailable; this device is keeping its local property."
+        }
+    }
+
+    private func publishWidgetPayload() async {
+        let payload = WidgetSchedulePayloadBuilder.make(
+            property: property,
+            snapshot: snapshot,
+            now: now()
+        )
+
+        do {
+            let currentPayload = try await widgetPayloadStore.load()
+            guard currentPayload != payload else { return }
+            try await widgetPayloadStore.save(payload)
+            await widgetTimelineReloader.reloadCollectionWidget()
+        } catch {
+            // A widget is an optional surface. Keep the app's saved schedule and
+            // integrations independent if the shared container is unavailable.
         }
     }
 
