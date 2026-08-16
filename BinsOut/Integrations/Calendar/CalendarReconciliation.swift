@@ -25,9 +25,73 @@ struct CalendarEventDescriptor: Equatable, Sendable {
     init(occurrence: CollectionOccurrence, snapshot: ScheduleSnapshot) {
         occurrenceID = occurrence.id
         localDate = occurrence.localDate
-        let names = occurrence.containers.map(\.sourceLabel).formatted(.list(type: .and))
-        title = "Bins: \(names)"
-        notes = "Scheduled collection · place at the boundary before 06:00. Source: \(snapshot.providerDisplayName). Last refreshed \(snapshot.fetchedAt.formatted(date: .abbreviated, time: .shortened))."
+        title = Self.title(for: occurrence.containers)
+        notes = Self.notes(for: occurrence.containers, snapshot: snapshot)
+    }
+
+    private static func title(for containers: [ContainerKind]) -> String {
+        let categories = Set(containers.map(ContainerCategory.init))
+        let hasRecycling = categories.contains(.recycling)
+        let hasGeneralWaste = categories.contains(.generalWaste)
+
+        if hasRecycling, hasGeneralWaste {
+            return "🗑️ Recycling + Bins"
+        }
+        if hasRecycling {
+            return "♻️ Recycling"
+        }
+        if hasGeneralWaste {
+            return "🗑️ Bins"
+        }
+        if categories.contains(.garden) {
+            return "🍃 Garden waste"
+        }
+        if categories.contains(.food) {
+            return "🍽️ Food waste"
+        }
+        return "🗓️ Collection"
+    }
+
+    private static func notes(for containers: [ContainerKind], snapshot: ScheduleSnapshot) -> String {
+        let containerList = containers
+            .map(\.sourceLabel)
+            .map { "• \($0)" }
+            .joined(separator: "\n")
+        let lastRefreshed = snapshot.fetchedAt.formatted(date: .abbreviated, time: .shortened)
+
+        return """
+        Scheduled collection
+
+        Containers:
+        \(containerList)
+
+        Place containers at the boundary before 06:00.
+        Source: \(snapshot.providerDisplayName).
+        Last refreshed: \(lastRefreshed).
+        """
+    }
+
+    private enum ContainerCategory: Hashable {
+        case recycling
+        case generalWaste
+        case garden
+        case food
+        case other
+
+        init(_ container: ContainerKind) {
+            let label = container.sourceLabel.lowercased()
+            if label.contains("recycl") || label.contains("blue bag") {
+                self = .recycling
+            } else if label.contains("garden") {
+                self = .garden
+            } else if label.contains("food") || label.contains("brown") {
+                self = .food
+            } else if label.contains("general") || label.contains("refuse") || label.contains("wheelie") {
+                self = .generalWaste
+            } else {
+                self = .other
+            }
+        }
     }
 }
 
@@ -59,6 +123,8 @@ enum CalendarReconciliationPlanner {
     ) -> CalendarReconciliationPlan? {
         guard let calendarIdentifier = state.selectedCalendarIdentifier else { return nil }
 
+        // The provider snapshot is the only authority for how far ahead to create
+        // events. We intentionally do not synthesize a recurring series.
         let desiredOccurrences = snapshot.occurrences.filter { $0.localDate >= currentDate }
         let desiredByID = Dictionary(uniqueKeysWithValues: desiredOccurrences.map { ($0.id, $0) })
         var references = state.managedEventsByOccurrenceID

@@ -39,7 +39,6 @@ final class AppModel {
     private(set) var calendarPermission: CalendarPermissionStatus = .notDetermined
     private(set) var liveActivityResult: LiveActivityReconciliationResult = .disabled
     private(set) var isLiveActivityPreviewActive = false
-    private(set) var pendingCalendarPlan: CalendarReconciliationPlan?
     private(set) var standaloneErrorMessage: String?
     private(set) var integrationMessage: String?
     private(set) var propertySyncMessage: String?
@@ -110,10 +109,8 @@ final class AppModel {
             }
             completionState = try await completionStore.load()
             loadState = .ready
-            Task {
-                await refreshPermissionStatuses()
-                await reconcileSystemFeatures()
-            }
+            await refreshPermissionStatuses()
+            await reconcileSystemFeatures()
         } catch {
             loadState = .failed(Self.message(for: error))
         }
@@ -279,30 +276,16 @@ final class AppModel {
     }
 
     func selectCalendar(_ calendar: SelectedCalendar) async {
+        isUpdatingSystemFeatures = true
+        integrationMessage = nil
+        defer { isUpdatingSystemFeatures = false }
+
         settings.calendar.isEnabled = true
         settings.calendar.selectedCalendarIdentifier = calendar.identifier
         settings.calendar.selectedCalendarTitle = calendar.title
         settings.calendar.suppressedOccurrenceIDs = []
         try? await persist()
-        prepareCalendarPlan()
-    }
-
-    func applyPendingCalendarPlan() async {
-        guard let pendingCalendarPlan else { return }
-        isUpdatingSystemFeatures = true
-        integrationMessage = nil
-        defer { isUpdatingSystemFeatures = false }
-        do {
-            settings.calendar = try calendarService.apply(
-                plan: pendingCalendarPlan,
-                to: settings.calendar,
-                at: now()
-            )
-            self.pendingCalendarPlan = nil
-            try await persist()
-        } catch {
-            integrationMessage = Self.message(for: error)
-        }
+        await reconcileCalendar()
     }
 
     func disableCalendarSync(removeFutureEvents: Bool) async {
@@ -319,17 +302,16 @@ final class AppModel {
             } else {
                 settings.calendar.isEnabled = false
             }
-            pendingCalendarPlan = nil
             try await persist()
         } catch {
             integrationMessage = Self.message(for: error)
         }
     }
 
-    func calendarStoreChanged() {
+    func calendarStoreChanged() async {
         guard settings.calendar.isEnabled else { return }
         calendarPermission = calendarService.permissionStatus()
-        prepareCalendarPlan()
+        await reconcileCalendar()
     }
 
     func refreshPermissionStatuses() async {
@@ -374,25 +356,30 @@ final class AppModel {
         }
 
         if settings.calendar.isEnabled {
-            calendarPermission = calendarService.permissionStatus()
-            prepareCalendarPlan()
+            await reconcileCalendar()
         }
     }
 
-    private func prepareCalendarPlan() {
-        guard settings.calendar.isEnabled, let snapshot else {
-            pendingCalendarPlan = nil
+    private func reconcileCalendar() async {
+        guard settings.calendar.isEnabled, let snapshot else { return }
+        calendarPermission = calendarService.permissionStatus()
+        guard calendarPermission == .allowed else {
+            integrationMessage = "Full Calendar access is needed to keep selected-calendar events synchronized."
             return
         }
+
         do {
             let plan = try calendarService.preparePlan(
                 snapshot: snapshot,
                 state: settings.calendar,
                 currentDate: currentLocalDate
             )
-            pendingCalendarPlan = plan.totalChanges > 0 || !plan.newlySuppressedOccurrenceIDs.isEmpty
-                ? plan
-                : nil
+            settings.calendar = try calendarService.apply(
+                plan: plan,
+                to: settings.calendar,
+                at: now()
+            )
+            try await persist()
         } catch {
             integrationMessage = Self.message(for: error)
         }

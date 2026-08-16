@@ -83,7 +83,7 @@ final class EventKitCalendarService: CalendarSyncServicing {
             }
         }
 
-        if let horizon = snapshot.authoritativeThrough {
+        if let horizon = snapshot.authoritativeThrough, horizon >= currentDate {
             let predicate = eventStore.predicateForEvents(
                 withStart: currentDate.date(hour: 0),
                 end: horizon.adding(days: 1).date(hour: 0),

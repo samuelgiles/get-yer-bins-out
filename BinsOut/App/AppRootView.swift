@@ -33,7 +33,7 @@ struct AppRootView: View {
         }
         .task {
             for await _ in NotificationCenter.default.notifications(named: .EKEventStoreChanged) {
-                appModel.calendarStoreChanged()
+                await appModel.calendarStoreChanged()
             }
         }
     }

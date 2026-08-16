@@ -3,7 +3,6 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var appModel
     @State private var isShowingCalendarChooser = false
-    @State private var isShowingCalendarPreview = false
     @State private var isShowingDisableCalendarConfirmation = false
     @State private var isShowingPropertySetup = false
 
@@ -39,7 +38,6 @@ struct SettingsView: View {
                 isShowingCalendarChooser = false
                 Task {
                     await appModel.selectCalendar(calendar)
-                    isShowingCalendarPreview = appModel.pendingCalendarPlan != nil
                 }
             } onCancel: {
                 isShowingCalendarChooser = false
@@ -52,24 +50,6 @@ struct SettingsView: View {
                 cancelAction: { isShowingPropertySetup = false },
                 didSave: { isShowingPropertySetup = false }
             )
-        }
-        .sheet(isPresented: $isShowingCalendarPreview) {
-            if let plan = appModel.pendingCalendarPlan {
-                CalendarSyncPreviewView(
-                    plan: plan,
-                    calendarName: appModel.settings.calendar.selectedCalendarTitle ?? "Selected calendar",
-                    isApplying: appModel.isUpdatingSystemFeatures
-                ) {
-                    Task {
-                        await appModel.applyPendingCalendarPlan()
-                        if appModel.pendingCalendarPlan == nil {
-                            isShowingCalendarPreview = false
-                        }
-                    }
-                } cancel: {
-                    isShowingCalendarPreview = false
-                }
-            }
         }
         .confirmationDialog(
             "Turn off calendar sync?",
@@ -216,12 +196,7 @@ struct SettingsView: View {
                     isShowingCalendarChooser = true
                 }
 
-                if let plan = appModel.pendingCalendarPlan {
-                    Button("Review \(plan.totalChanges) calendar change(s)", systemImage: "list.bullet.clipboard") {
-                        isShowingCalendarPreview = true
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else if let lastReconciledAt = appModel.settings.calendar.lastReconciledAt {
+                if let lastReconciledAt = appModel.settings.calendar.lastReconciledAt {
                     LabeledContent(
                         "Last synced",
                         value: lastReconciledAt.formatted(date: .abbreviated, time: .shortened)
@@ -245,7 +220,7 @@ struct SettingsView: View {
         } header: {
             Text("Calendar")
         } footer: {
-            Text("You choose one writable calendar and explicitly review additions, updates, and removals. Events are individual all-day dates, not a guessed recurrence. Calendar alerts may duplicate app reminders if you add them separately.")
+            Text("Events are individual all-day dates in your selected writable calendar. Bins Out keeps them up to date from Bristol’s returned schedule and never guesses a recurrence. Calendar alerts may duplicate app reminders if you add them separately.")
         }
     }
 
