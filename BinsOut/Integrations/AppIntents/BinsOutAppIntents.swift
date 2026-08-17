@@ -2,20 +2,19 @@
 import AppIntents
 import Foundation
 
-/// App-owned collection questions run in the main app process on iOS and iPadOS 27.
-/// They use `SiriCollectionAnswerService`, whose only data source is the UPRN-free App
-/// Group widget payload; no intent performs council networking.
+/// App-owned collection questions, answered from the app's own persisted property and
+/// schedule. Each returns an entity other actions can chain, dialog, and a snippet.
 struct NextScheduledCollectionIntent: AppIntent {
     static let title: LocalizedStringResource = "Get next collection"
-    static let description = IntentDescription("Answers with the next scheduled collection saved in Bins Out.")
+    static let description = IntentDescription("Answers with the next scheduled collection for your saved property.")
     static let supportedModes: IntentModes = .background
     static let allowedExecutionTargets: ExecutionTargets = .main
 
     init() { }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let answer = await SiriCollectionAnswerService().answer(to: .nextScheduledCollection)
-        return .result(dialog: dialog(for: answer))
+    func perform() async throws -> some ReturnsValue<ScheduledCollectionEntity?>
+        & ProvidesDialog & ShowsSnippetIntent {
+        try await collectionResult(for: .nextScheduledCollection)
     }
 }
 
@@ -27,9 +26,9 @@ struct PutOutTimeIntent: AppIntent {
 
     init() { }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let answer = await SiriCollectionAnswerService().answer(to: .putOutTime)
-        return .result(dialog: dialog(for: answer))
+    func perform() async throws -> some ReturnsValue<ScheduledCollectionEntity?>
+        & ProvidesDialog & ShowsSnippetIntent {
+        try await collectionResult(for: .putOutTime)
     }
 }
 
@@ -41,9 +40,12 @@ struct GlassBottleSortingIntent: AppIntent {
 
     init() { }
 
-    func perform() async throws -> some IntentResult & ProvidesDialog {
-        let answer = await SiriCollectionAnswerService().answer(to: .glassBottleSorting)
-        return .result(dialog: dialog(for: answer))
+    func perform() async throws -> some ProvidesDialog & ShowsSnippetIntent {
+        let answer = CollectionAnswerPhrasing.glassBottleSortingAnswer
+        return .result(
+            dialog: dialog(for: answer),
+            snippetIntent: GlassSortingSnippetIntent()
+        )
     }
 }
 
@@ -58,7 +60,7 @@ struct OpenGlassBottleGuidanceIntent: AppIntent {
     init() { }
 
     func perform() async throws -> some IntentResult & OpensIntent {
-        .result(opensIntent: OpenURLIntent(SiriCollectionAnswerService.officialGlassBottleGuidanceURL))
+        .result(opensIntent: OpenURLIntent(CollectionAnswerPhrasing.officialGlassBottleGuidanceURL))
     }
 }
 
@@ -90,6 +92,17 @@ struct BinsOutAppShortcuts: AppShortcutsProvider {
         )
 
         AppShortcut(
+            intent: RefreshScheduleIntent(),
+            phrases: [
+                "Refresh my bin schedule in \(.applicationName)",
+                "Check for new collection dates in \(.applicationName)",
+                "Update my collection dates in \(.applicationName)"
+            ],
+            shortTitle: "Refresh schedule",
+            systemImageName: "arrow.clockwise"
+        )
+
+        AppShortcut(
             intent: GlassBottleSortingIntent(),
             phrases: [
                 "Which bin do glass bottles go in with \(.applicationName)",
@@ -112,9 +125,22 @@ struct BinsOutAppShortcuts: AppShortcutsProvider {
     }
 }
 
-private func dialog(for answer: SiriCollectionAnswer) -> IntentDialog {
+private func collectionResult(
+    for question: CollectionQuestion
+) async throws -> some ReturnsValue<ScheduledCollectionEntity?> & ProvidesDialog & ShowsSnippetIntent {
+    let context = await CollectionAnswerService().context()
+    let answer = CollectionAnswerPhrasing.answer(to: question, context: context)
+
+    return .result(
+        value: context.nextEntity,
+        dialog: dialog(for: answer),
+        snippetIntent: NextCollectionSnippetIntent()
+    )
+}
+
+private func dialog(for answer: CollectionAnswer) -> IntentDialog {
     IntentDialog(
-        full: "\(answer.spokenText)",
+        full: "\(answer.fullText)",
         supporting: "\(answer.supportingText)",
         systemImageName: answer.systemImageName
     )

@@ -8,16 +8,16 @@
 - **Home Screen widgets** — the next collection, what goes out, and a `Today` / `Tomorrow` / `In N days` countdown, in small and medium sizes.
 - **Sorting info** — concise cards for Bristol's containers, linking straight to the council's official guidance.
 - **Calendar integration** — opt-in all-day events in a calendar you choose, kept in step with the schedule automatically.
-- **Ask Siri** — your next collection, when to put the containers out, and where Bristol glass goes.
+- **Ask Siri** — your next collection, when to put the containers out, and where Bristol glass goes. The answer comes back as a card you can act on: mark the bins out or refresh the schedule without opening the app.
 - **On-device and private** — no account, no analytics, no backend of ours. Only your property's UPRN leaves the phone, straight to Bristol City Council.
 
 ## Screenshots
 
-| Onboarding | Next collection |
-| --- | --- |
-| <img src="Documentation/Images/onboarding-council-selection.png" width="320" alt="Get yer Bins Out onboarding screen headed Welcome and Never miss bin night, with Bristol City Council shown as the only available council and marked as selected, above a Continue button."> | <img src="Documentation/Images/next-collection.png" width="320" alt="The Next screen for a property labelled 99 The Mall, Clifton. A card reads Next scheduled collection, Tuesday 18 August 2026, put out 17 Aug 2026 evening, listing black recycling box, brown food bin and green recycling box, with a Bins out button. Below, a Coming up section lists the following fortnight."> |
-| **Live Activity** | **Small widget** |
-| <img src="Documentation/Images/live-activity-lock-screen.png" width="320" alt="An iPhone Lock Screen showing the Get yer Bins Out Live Activity: a translucent green card headed Recycling, dated Tuesday 18 August 2026, listing black recycling box, brown food bin and green recycling box, with a Close button."> | <img src="Documentation/Images/small-collection-widget.png" width="320" alt="An iPhone Home Screen with the small Get yer Bins Out widget in the top-left corner. The green widget shows the property label 99 The Mall, Clifton, the heading Recycling, the date Tue 18th, and the countdown In 2 days."> |
+| Onboarding | Next collection | Sort |
+| --- | --- | --- |
+| <img src="Documentation/Images/onboarding-council-selection.png" alt="Get yer Bins Out onboarding screen headed Welcome and Never miss bin night, with Bristol City Council shown as the only available council and marked as selected, above a Continue button."> | <img src="Documentation/Images/next-collection.png" alt="The Next screen for a property labelled 99 The Mall, Clifton. A card reads Next scheduled collection, Tuesday 18 August 2026, put out 17 Aug 2026 evening, listing black recycling box, brown food bin and green recycling box, with a Bins out button. Below, a Coming up section lists the following fortnight."> | <img src="Documentation/Images/sort-containers.png" alt="The Sort screen, headed Bristol containers. A card lists each container with its icon and what belongs in it: black recycling box for glass and separately prepared special recycling, green recycling box for plastic packaging, cans and foil, blue recycling bag for cardboard, paper and clean cartons, brown food bin for cooked and uncooked food waste, black wheelie bin for household waste that cannot be recycled, and green garden bin for garden waste at subscribed, eligible properties."> |
+| **Ask Siri** | **Live Activity** | **Small widget** |
+| <img src="Documentation/Images/siri-next-collection.png" alt="Siri answering the question When do I need to put my bins out. The reply is an interactive card headed Recycling, marked Tomorrow, dated Tuesday 18 August 2026. Under To put out it lists a 23L food waste bin, 45L black recycling box, 55L green recycling box and 90L blue bag, each with an icon. Below: Then bins on 25 Aug 2026, a note that these are scheduled collection dates and not confirmation that a crew completed a collection, the time the schedule was last updated, and green Bins out and blue Refresh buttons."> | <img src="Documentation/Images/live-activity-lock-screen.png" alt="An iPhone Lock Screen showing the Get yer Bins Out Live Activity: a translucent green card headed Recycling, dated Tuesday 18 August 2026, listing black recycling box, brown food bin and green recycling box, with a Close button."> | <img src="Documentation/Images/small-collection-widget.png" alt="An iPhone Home Screen with the small Get yer Bins Out widget in the top-left corner. The green widget shows the property label 99 The Mall, Clifton, the heading Recycling, the date Tue 18th, and the countdown In 2 days."> |
 
 <details>
 <summary><strong>Everything else — what works, privacy, limitations, and how to build</strong></summary>
@@ -33,7 +33,7 @@ Get yer Bins Out is a native iOS 27 SwiftUI app for property-specific Bristol bi
 - Sort presents concise Bristol container cards and links to official council guidance rather than copying a council sorting database.
 - Settings manages the saved property, data freshness, local reminders, Live Activities, and hands-off selected-calendar synchronization.
 - Small and medium widgets read a UPRN-free App Group payload. They use semantic recycling/bin/garden backgrounds, show the property, collection type, short date and a `Today` / `Tomorrow` / `In N days` countdown, and keep the full medium-size "Put out" list.
-- App Intents answer the next collection, when containers should go out, and Bristol glass-bottle sorting questions from the same privacy-minimised App Group payload. A separate shortcut opens the official glass guidance.
+- App Intents answer the next collection, when containers should go out, and Bristol glass-bottle sorting questions from the saved property's own schedule, refreshing it when it has gone stale. Each answer returns a chainable `ScheduledCollectionEntity`, spoken dialog, and an interactive snippet with the same "Bins out" button as the Live Activity. Separate shortcuts refresh the schedule and open the official glass guidance.
 - Deterministic previews cover the app's major states, both widget families, and Lock Screen plus Dynamic Island Live Activity presentations without networking or permissions.
 
 ## Data and privacy
@@ -42,7 +42,7 @@ Normal app launches use `BristolCollectionProvider`. Previews and unit tests inj
 
 The Bristol API credential is council-authorized public client configuration, centralized in `BristolAPIConfiguration`, and necessarily extractable from the binary. Bristol must protect it operationally through endpoint scope, quotas, monitoring, revocation, and rotation—not obfuscation. The app does not log it.
 
-The live request sends only the exact user-entered UPRN string to Bristol's approved `NextCollectionDates` endpoint. The widget and Siri payload contains the local property label, scheduled local dates, container labels, and freshness state, but no UPRN, credential, raw response, or EventKit data. The selected property can sync through iCloud Keychain; the schedule cache remains local/App Group data.
+The live request sends only the exact user-entered UPRN string to Bristol's approved `NextCollectionDates` endpoint. The widget payload contains the local property label, scheduled local dates, container labels, and freshness state, but no UPRN, credential, raw response, or EventKit data. App Intents run in the main app process and read the app's own saved schedule, but nothing they hand to the system—dialog, display representations, snippets, or entity identifiers—carries a UPRN or address either. The selected property can sync through iCloud Keychain; the schedule cache remains local/App Group data.
 
 ## System features
 
