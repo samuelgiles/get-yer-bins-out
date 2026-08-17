@@ -33,7 +33,7 @@ Get yer Bins Out is a native iOS 27 SwiftUI app for property-specific Bristol bi
 - Sort presents concise Bristol container cards and links to official council guidance rather than copying a council sorting database.
 - Settings manages the saved property, data freshness, local reminders, Live Activities, and hands-off selected-calendar synchronization.
 - Small and medium widgets read a UPRN-free App Group payload. They use semantic recycling/bin/garden backgrounds, show the property, collection type, short date and a `Today` / `Tomorrow` / `In N days` countdown, and keep the full medium-size "Put out" list.
-- App Intents answer the next collection, when containers should go out, and Bristol glass-bottle sorting questions from the same privacy-minimised App Group payload. A separate shortcut opens the official glass guidance.
+- App Intents answer the next collection, when containers should go out, and Bristol glass-bottle sorting questions from the saved property's own schedule, refreshing it when it has gone stale. Each answer returns a chainable `ScheduledCollectionEntity`, spoken dialog, and an interactive snippet with the same "Bins out" button as the Live Activity. Separate shortcuts refresh the schedule and open the official glass guidance.
 - Deterministic previews cover the app's major states, both widget families, and Lock Screen plus Dynamic Island Live Activity presentations without networking or permissions.
 
 ## Data and privacy
@@ -42,7 +42,7 @@ Normal app launches use `BristolCollectionProvider`. Previews and unit tests inj
 
 The Bristol API credential is council-authorized public client configuration, centralized in `BristolAPIConfiguration`, and necessarily extractable from the binary. Bristol must protect it operationally through endpoint scope, quotas, monitoring, revocation, and rotation—not obfuscation. The app does not log it.
 
-The live request sends only the exact user-entered UPRN string to Bristol's approved `NextCollectionDates` endpoint. The widget and Siri payload contains the local property label, scheduled local dates, container labels, and freshness state, but no UPRN, credential, raw response, or EventKit data. The selected property can sync through iCloud Keychain; the schedule cache remains local/App Group data.
+The live request sends only the exact user-entered UPRN string to Bristol's approved `NextCollectionDates` endpoint. The widget payload contains the local property label, scheduled local dates, container labels, and freshness state, but no UPRN, credential, raw response, or EventKit data. App Intents run in the main app process and read the app's own saved schedule, but nothing they hand to the system—dialog, display representations, snippets, or entity identifiers—carries a UPRN or address either. The selected property can sync through iCloud Keychain; the schedule cache remains local/App Group data.
 
 ## System features
 

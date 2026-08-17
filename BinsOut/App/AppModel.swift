@@ -497,7 +497,7 @@ final class AppModel {
     }
 #endif
 
-    static func message(for error: Error) -> String {
+    nonisolated static func message(for error: Error) -> String {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:

@@ -28,13 +28,7 @@ enum WidgetSchedulePayloadBuilder {
                     month: occurrence.localDate.month,
                     day: occurrence.localDate.day
                 ),
-                containers: occurrence.containers.map { container in
-                    WidgetContainer(
-                        id: container.id,
-                        name: container.sourceLabel,
-                        symbolName: container.displayMetadata.symbolName
-                    )
-                }
+                containers: occurrence.sharedContainers
             )
         }
 

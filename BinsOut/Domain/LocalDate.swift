@@ -144,6 +144,11 @@ struct LocalDate: Codable, Hashable, Comparable, Sendable {
         )
     }
 
+    var weekdayName: String {
+        let weekdayIndex = Self.calendar.component(.weekday, from: dateAtNoon) - 1
+        return Self.calendar.weekdaySymbols[weekdayIndex]
+    }
+
     var shortDescription: String {
         dateAtNoon.formatted(
             Date.FormatStyle(
